@@ -69,10 +69,10 @@ def get_delta_urls():
 def fetch_prices():
     """Fetch all perpetual futures prices from Delta Exchange."""
     urls = [
-        "https://api.india.delta.exchange/v2/tickers?contract_types=perpetual_futures",
-        "https://api.delta.exchange/v2/tickers?contract_types=perpetual_futures",
         "https://api.india.delta.exchange/v2/tickers",
         "https://api.delta.exchange/v2/tickers",
+        "https://api.india.delta.exchange/v2/tickers?contract_types=perpetual_futures",
+        "https://api.delta.exchange/v2/tickers?contract_types=perpetual_futures",
     ]
     browser_headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
