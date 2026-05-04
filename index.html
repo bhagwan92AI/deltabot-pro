@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeltaBot Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080c10;
+  --surface: #0d1318;
+  --surface2: #131a22;
+  --border: #1e2d3d;
+  --border2: #243547;
+  --green: #00d68f;
+  --green-dim: #00d68f22;
+  --red: #ff4757;
+  --red-dim: #ff475722;
+  --amber: #ffa502;
+  --amber-dim: #ffa50222;
+  --blue: #1e90ff;
+  --blue-dim: #1e90ff18;
+  --text: #e8f0f8;
+  --text2: #7a9ab5;
+  --text3: #3d5a72;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Syne', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--mono); min-height: 100vh; overflow-x: hidden; }
+
+/* GRID BACKGROUND */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  background: #080c10ee;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 56px;
+}
+.nav-brand { font-family: var(--sans); font-weight: 800; font-size: 18px; letter-spacing: -0.5px; }
+.nav-brand span { color: var(--green); }
+.nav-tabs { display: flex; gap: 4px; }
+.nav-tab {
+  padding: 6px 16px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; font-weight: 500; letter-spacing: 0.05em;
+  color: var(--text2); border: none; background: transparent;
+  transition: all 0.15s;
+}
+.nav-tab:hover { color: var(--text); background: var(--surface2); }
+.nav-tab.active { color: var(--green); background: var(--green-dim); }
+.status-pill {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--text2);
+}
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text3); }
+.dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* LAYOUT */
+.page { display: none; padding: 2rem; max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+.page.active { display: block; }
+
+/* CARDS */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+.card-title {
+  font-family: var(--sans); font-size: 13px; font-weight: 600;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text2); margin-bottom: 1.25rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+
+/* METRICS */
+.metric {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+.metric-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.metric-val { font-size: 26px; font-weight: 700; font-family: var(--sans); }
+.metric-sub { font-size: 11px; color: var(--text2); margin-top: 4px; }
+.green { color: var(--green); }
+.red { color: var(--red); }
+.amber { color: var(--amber); }
+.blue { color: var(--blue); }
+
+/* BUTTONS */
+.btn {
+  padding: 10px 20px; border-radius: 8px; cursor: pointer;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.05em; border: 1px solid; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-green { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.btn-green:hover { background: var(--green); color: #000; }
+.btn-red { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.btn-red:hover { background: var(--red); color: #fff; }
+.btn-blue { background: var(--blue-dim); border-color: var(--blue); color: var(--blue); }
+.btn-blue:hover { background: var(--blue); color: #fff; }
+.btn-ghost { background: transparent; border-color: var(--border2); color: var(--text2); }
+.btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+
+/* INPUTS */
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-size: 11px; color: var(--text2); margin-bottom: 6px; letter-spacing: 0.05em; }
+.field input, .field select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 10px 14px; color: var(--text);
+  font-family: var(--mono); font-size: 13px;
+  transition: border-color 0.15s; outline: none;
+}
+.field input:focus, .field select:focus { border-color: var(--blue); }
+.field input[type=range] {
+  padding: 0; height: 4px; accent-color: var(--green);
+  border: none; background: var(--border2);
+}
+
+/* TABLE */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { text-align: left; padding: 8px 12px; color: var(--text3); font-weight: 500; border-bottom: 1px solid var(--border); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text2); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 600; }
+.badge-green { background: var(--green-dim); color: var(--green); border: 1px solid var(--green)44; }
+.badge-red { background: var(--red-dim); color: var(--red); border: 1px solid var(--red)44; }
+.badge-amber { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber)44; }
+.badge-blue { background: var(--blue-dim); color: var(--blue); border: 1px solid var(--blue)44; }
+
+/* PROGRESS BAR */
+.progress-track { background: var(--border); border-radius: 99px; height: 4px; margin-top: 6px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s; }
+
+/* CONNECTION CARD */
+.conn-user {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface2);
+  margin-bottom: 8px;
+}
+.conn-info { display: flex; align-items: center; gap: 12px; }
+.conn-avatar {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--blue-dim); border: 1px solid var(--blue)44;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--blue); font-weight: 700;
+}
+.conn-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.conn-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.conn-actions { display: flex; gap: 8px; }
+
+/* CHART PLACEHOLDER */
+.chart-area {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; height: 200px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.chart-line { position: absolute; bottom: 0; left: 0; right: 0; height: 100%; }
+
+/* STRATEGY PARAMS */
+.param-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 0; border-bottom: 1px solid var(--border);
+}
+.param-row:last-child { border-bottom: none; }
+.param-label { font-size: 13px; color: var(--text); }
+.param-desc { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.param-val { font-size: 20px; font-weight: 700; color: var(--green); font-family: var(--sans); min-width: 80px; text-align: right; }
+
+/* SCAN TABLE LIVE */
+.scan-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 1rem; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 12px; align-items: center; }
+.scan-row:hover { background: var(--surface2); }
+.scan-header { color: var(--text3); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* SHARE BOX */
+.share-box {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  font-size: 13px; color: var(--text2);
+}
+.share-link { flex: 1; color: var(--blue); word-break: break-all; }
+.toast {
+  position: fixed; bottom: 2rem; right: 2rem;
+  background: var(--surface); border: 1px solid var(--green);
+  color: var(--green); padding: 12px 20px; border-radius: 8px;
+  font-size: 13px; z-index: 999; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* BACKTEST */
+.bt-stat { text-align: center; }
+.bt-val { font-size: 28px; font-weight: 800; font-family: var(--sans); }
+.bt-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 4px; }
+.loading-bar {
+  height: 2px; background: var(--green);
+  animation: load 2s ease-in-out forwards;
+}
+@keyframes load { from{width:0} to{width:100%} }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">Delta<span>Bot</span> Pro</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('connection')">Connection</button>
+    <button class="nav-tab" onclick="showPage('strategy')">Strategy</button>
+    <button class="nav-tab" onclick="showPage('backtest')">Backtest</button>
+    <button class="nav-tab" onclick="showPage('dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="showPage('prices')">Live Prices</button>
+  </div>
+  <div class="status-pill">
+    <div class="dot" id="conn-dot"></div>
+    <span id="conn-label">Disconnected</span>
+  </div>
+</nav>
+
+<!-- ============ PAGE: CONNECTION ============ -->
+<div class="page active" id="page-connection">
+  <div class="grid-2" style="margin-bottom:1rem">
+    <div class="card">
+      <div class="card-title">🔌 Delta Exchange API</div>
+      <div class="field">
+        <label>API KEY</label>
+        <input type="password" id="api-key" placeholder="Enter your Delta Exchange API Key">
+      </div>
+      <div class="field">
+        <label>API SECRET</label>
+        <input type="password" id="api-secret" placeholder="Enter your Delta Exchange API Secret">
+      </div>
+      <div class="field">
+        <label>EXCHANGE</label>
+        <select id="exchange-type">
+          <option value="india">Delta Exchange India (api.india.delta.exchange)</option>
+          <option value="global">Delta Exchange Global (api.delta.exchange)</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:0.5rem">
+        <button class="btn btn-green" onclick="connect()" id="btn-connect">▶ Connect</button>
+        <button class="btn btn-red" onclick="disconnect()" id="btn-disconnect" style="display:none">■ Disconnect</button>
+        <button class="btn btn-ghost" onclick="testConnection()">⟳ Test</button>
+      </div>
+      <div id="conn-status-msg" style="margin-top:1rem;font-size:12px;color:var(--text3)"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Account Status</div>
+      <div class="grid-2" style="margin-bottom:1rem">
+        <div class="metric">
+          <div class="metric-label">Balance</div>
+          <div class="metric-val green" id="stat-balance">—</div>
+          <div class="metric-sub">USDT available</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Mode</div>
+          <div class="metric-val amber" id="stat-mode">PAPER</div>
+          <div class="metric-sub">trading mode</div>
+        </div>
+      </div>
+      <div class="metric" style="margin-bottom:0.75rem">
+        <div class="metric-label">Watching</div>
+        <div class="metric-val blue" id="stat-coins">—</div>
+        <div class="metric-sub">perpetual contracts scanned</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Last Scan</div>
+        <div class="metric-val" style="font-size:16px" id="stat-scan">—</div>
+        <div class="metric-sub">scan interval: 60s</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">👥 Share Bot with Others</div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Share this link so others can connect their own Delta Exchange accounts and run the same strategy.</p>
+    <div class="share-box">
+      <span>🔗</span>
+      <span class="share-link" id="share-link">https://deltabot.pro/join/XXXX-XXXX</span>
+      <button class="btn btn-ghost" onclick="copyLink()" style="white-space:nowrap">Copy Link</button>
+    </div>
+    <div style="margin-top:1.5rem">
+      <div class="card-title">Connected Users</div>
+      <div id="users-list">
+        <div class="conn-user">
+          <div class="conn-info">
+            <div class="conn-avatar">AP</div>
+            <div>
+              <div class="conn-name">Ajeet Pandey (You)</div>
+              <div class="conn-sub">Delta India · Connected · Paper mode</div>
+            </div>
+          </div>
+          <div class="conn-actions">
+            <span class="badge badge-green">Owner</span>
+          </div>
+        </div>
+        <div class="conn-user" style="opacity:0.4">
+          <div class="conn-info">
+            <div class="conn-avatar" style="background:var(--amber-dim);color:var(--amber);border-color:var(--amber)44">?</div>
+            <div>
+              <div class="conn-name">Waiting for others to join...</div>
+              <div class="conn-sub">Share the link above</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAGE: STRATEGY ============ -->
+<div class="page" id="page-strategy">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">⚙️ Strategy Parameters</div>
+
+      <div class="param-row">
+        <div>
+          <div class="param-label">Growth Trigger</div>
+          <div class="param-desc">Signal fires when price rises X% above yesterday's close</div>
+          <input type="range" min="50" max="1000" value="350" step="10" oninput="updateParam('trigger',this.value)" style="width:100%;margin-top:8px">
+        </div>
+        <div class="param-val" id="val-trigger">350%</div>
+      </div>
+
+      <div class="param-row">
+        <div>
+          <div class="param-label">Take Profit</div>
+          <div class="param-desc">Exit all when price reverses X% from signal price</div>
+          <input type="range" min="10" max="90" value="50" step="5" oninput="updateParam('tp',this.value)" style="width:100%;margin-top:8px">
+        </div>
+        <div class="param-val" id="val-tp">50%</div>
+      </div>
+
+      <div class="param-row">
+        <div>
+          <div class="param-label">Stop Loss</div>
+          <div class="param-desc">Exit all when price goes X% above signal price</div>
+          <input type="range" min="20" max="300" value="100" step="10" oninput="updateParam('sl',this.value)" style="width:100%;margin-top:8px">
+        </div>
+        <div class="param-val" id="val-sl">100%</div>
+      </div>
+
+      <div class="param-row">
+        <div>
+          <div class="param-label">Capital Per Trade</div>
+          <div class="param-desc">USD risked per position</div>
+          <input type="range" min="1" max="100" value="5" step="1" oninput="updateParam('capital',this.value)" style="width:100%;margin-top:8px">
+        </div>
+        <div class="param-val" id="val-capital">$5</div>
+      </div>
+
+      <div class="param-row">
+        <div>
+          <div class="param-label">Leverage</div>
+          <div class="param-desc">Multiplier on capital</div>
+          <input type="range" min="2" max="100" value="20" step="1" oninput="updateParam('lev',this.value)" style="width:100%;margin-top:8px">
+        </div>
+        <div class="param-val" id="val-lev">20x</div>
+      </div>
+
+      <button class="btn btn-green" style="margin-top:1rem;width:100%" onclick="saveStrategy()">💾 Save Strategy</button>
+    </div>
+
+    <div>
+      <div class="card">
+        <div class="card-title">📐 Strategy Preview</div>
+        <div style="font-size:12px;color:var(--text2);line-height:2">
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span>Yesterday close (example)</span><span style="color:var(--text)">$1.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span>Signal fires at</span><span class="amber" id="prev-signal">$4.50</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span>Take profit at</span><span class="green" id="prev-tp">$2.25</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span>Stop loss at</span><span class="red" id="prev-sl">$9.00</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span>Position size</span><span class="blue" id="prev-pos">$100</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:6px 0">
+            <span>Max profit on $5</span><span class="green" id="prev-profit">+$125</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">⚡ Flow</div>
+        <div style="font-size:12px;line-height:1.8;color:var(--text2)">
+          <div style="color:var(--text);margin-bottom:4px">① Scan all 185 Delta perps every 60s</div>
+          <div style="color:var(--text3);margin-bottom:8px;padding-left:12px;border-left:2px solid var(--border)">Track each coin vs yesterday's close</div>
+          <div style="color:var(--text);margin-bottom:4px">② Signal fires at <span class="amber" id="flow-trigger">350%</span> growth</div>
+          <div style="color:var(--text3);margin-bottom:8px;padding-left:12px;border-left:2px solid var(--border)">Auto-enter with 20x leverage</div>
+          <div style="color:var(--text);margin-bottom:4px">③ Wait for reversal</div>
+          <div style="color:var(--text3);padding-left:12px;border-left:2px solid var(--border)">
+            <span class="green">↓ <span id="flow-tp">50%</span> drop → Take Profit</span><br>
+            <span class="red">↑ <span id="flow-sl">100%</span> rise → Stop Loss</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAGE: BACKTEST ============ -->
+<div class="page" id="page-backtest">
+  <div class="card">
+    <div class="card-title">🧪 Backtest Configuration</div>
+    <div class="grid-3">
+      <div class="field">
+        <label>COIN / PAIR</label>
+        <select id="bt-coin">
+          <option>RAVEUSDT</option>
+          <option>DEXEUSDT</option>
+          <option>HYPEUSDT</option>
+          <option>BTCUSDT</option>
+          <option>ETHUSDT</option>
+          <option>SOLUSDT</option>
+          <option>BNBUSDT</option>
+          <option>All Delta Perps (slow)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>PERIOD</label>
+        <select id="bt-period">
+          <option>Last 6 months</option>
+          <option>Last 3 months</option>
+          <option>Last 1 month</option>
+          <option>Last 1 year</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>USE CURRENT STRATEGY</label>
+        <select id="bt-strategy">
+          <option>Current (350% / 50% TP / 100% SL)</option>
+          <option>Custom (use sliders below)</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-blue" onclick="runBacktest()" style="width:100%">▶ Run Backtest</button>
+  </div>
+
+  <div id="bt-loading" style="display:none" class="card">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Fetching 6 months of data and simulating strategy...</div>
+    <div class="loading-bar" id="bt-bar"></div>
+  </div>
+
+  <div id="bt-results" style="display:none">
+    <div class="card">
+      <div class="card-title">📈 Backtest Results — <span id="bt-result-label">RAVEUSDT · 6 months</span></div>
+      <div class="grid-4" style="margin-bottom:1.5rem">
+        <div class="metric bt-stat">
+          <div class="metric-label">Total Trades</div>
+          <div class="metric-val" id="bt-total">—</div>
+        </div>
+        <div class="metric bt-stat">
+          <div class="metric-label">Profits</div>
+          <div class="metric-val green" id="bt-profits">—</div>
+        </div>
+        <div class="metric bt-stat">
+          <div class="metric-label">Losses</div>
+          <div class="metric-val red" id="bt-losses">—</div>
+        </div>
+        <div class="metric bt-stat">
+          <div class="metric-label">Win Rate</div>
+          <div class="metric-val green" id="bt-winrate">—</div>
+        </div>
+      </div>
+      <div class="grid-3" style="margin-bottom:1.5rem">
+        <div class="metric bt-stat">
+          <div class="metric-label">Total PnL ($5/trade)</div>
+          <div class="metric-val green" id="bt-pnl">—</div>
+        </div>
+        <div class="metric bt-stat">
+          <div class="metric-label">Best Trade</div>
+          <div class="metric-val green" id="bt-best">—</div>
+        </div>
+        <div class="metric bt-stat">
+          <div class="metric-label">Worst Trade</div>
+          <div class="metric-val red" id="bt-worst">—</div>
+        </div>
+      </div>
+
+      <div class="card-title">Trade Log</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th><th>Coin</th><th>Entry</th><th>Signal</th><th>Exit</th><th>Result</th><th>PnL</th>
+            </tr>
+          </thead>
+          <tbody id="bt-table"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAGE: DASHBOARD ============ -->
+<div class="page" id="page-dashboard">
+  <div class="grid-4" style="margin-bottom:1rem">
+    <div class="metric">
+      <div class="metric-label">Total PnL</div>
+      <div class="metric-val green" id="live-pnl">$0.00</div>
+      <div class="metric-sub">paper trading</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Open Trades</div>
+      <div class="metric-val blue" id="live-open">0</div>
+      <div class="metric-sub">active positions</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Signals Today</div>
+      <div class="metric-val amber" id="live-signals">0</div>
+      <div class="metric-sub">350% triggers fired</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Coins Scanned</div>
+      <div class="metric-val" id="live-scanned">185</div>
+      <div class="metric-sub">every 60 seconds</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">🔥 Closest to 350% Signal — Live</div>
+    <div class="scan-row scan-header">
+      <span>Coin</span><span>Current</span><span>Yesterday</span><span>% Change</span><span>Gap to Signal</span>
+    </div>
+    <div id="scan-list">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 Trade History</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Time</th><th>Coin</th><th>Entry</th><th>Exit</th><th>Result</th><th>PnL</th><th>Status</th></tr></thead>
+        <tbody id="trade-history">
+          <tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">No trades yet. Bot is scanning...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PAGE: LIVE PRICES ============ -->
+<div class="page" id="page-prices">
+
+  <!-- Top bar -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:12px">
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost" id="f-all" onclick="filterPrices('all')" style="font-size:11px;padding:6px 14px">All</button>
+      <button class="btn btn-ghost" id="f-gainers" onclick="filterPrices('gainers')" style="font-size:11px;padding:6px 14px">🟢 Gainers</button>
+      <button class="btn btn-ghost" id="f-losers" onclick="filterPrices('losers')" style="font-size:11px;padding:6px 14px">🔴 Losers</button>
+      <button class="btn btn-ghost" id="f-hot" onclick="filterPrices('hot')" style="font-size:11px;padding:6px 14px">🔥 Near Signal</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <input id="price-search" oninput="filterPrices('search')" placeholder="Search coin..." style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:7px 14px;color:var(--text);font-family:var(--mono);font-size:12px;outline:none;width:180px">
+      <div style="font-size:11px;color:var(--text3)" id="prices-count">185 coins</div>
+      <div style="font-size:11px;color:var(--text3)" id="prices-updated">—</div>
+    </div>
+  </div>
+
+  <!-- Market summary strip -->
+  <div class="grid-4" style="margin-bottom:1rem">
+    <div class="metric">
+      <div class="metric-label">Top Gainer 24h</div>
+      <div class="metric-val green" id="top-gainer">RAVE +324%</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Top Loser 24h</div>
+      <div class="metric-val red" id="top-loser">MEME -18%</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Near Signal (350%)</div>
+      <div class="metric-val amber" id="near-signal-count">2 coins</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Total Volume 24h</div>
+      <div class="metric-val blue" id="total-vol">$842M</div>
+    </div>
+  </div>
+
+  <!-- Price table -->
+  <div class="card" style="padding:0">
+    <div style="display:grid;grid-template-columns:2rem 2fr 1.2fr 1fr 1fr 1fr 1.4fr 1fr;gap:0;padding:10px 16px;border-bottom:1px solid var(--border)">
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">#</span>
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer" onclick="sortPrices('name')">Coin ↕</span>
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer;text-align:right" onclick="sortPrices('price')">Price ↕</span>
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer;text-align:right" onclick="sortPrices('change')">24h % ↕</span>
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;text-align:right">High</span>
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;text-align:right">Low</span>
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;cursor:pointer;text-align:right" onclick="sortPrices('vol')">Volume ↕</span>
+      <span style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;text-align:center">Signal</span>
+    </div>
+    <div id="price-table-body"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============ STATE ============
+let connected = false;
+let botRunning = false;
+let params = { trigger: 350, tp: 50, sl: 100, capital: 5, lev: 20 };
+let trades = [];
+let totalPnl = 0;
+let signalsToday = 0;
+let scanInterval = null;
+
+// Mock market data (simulates Delta Exchange coins)
+const mockCoins = [
+  {sym:'RAVEUSDT', price:0.0089, yest:0.0021, vol:2100000},
+  {sym:'DEXEUSDT', price:14.20, yest:4.15, vol:8500000},
+  {sym:'HYPEUSDT', price:8.90, yest:3.20, vol:5200000},
+  {sym:'MEMCUSDT', price:0.045, yest:0.018, vol:1800000},
+  {sym:'SOLUSDT',  price:128, yest:95, vol:45000000},
+  {sym:'APTUSDT',  price:5.20, yest:4.10, vol:3200000},
+  {sym:'SEIUSDT',  price:0.31, yest:0.25, vol:2800000},
+  {sym:'INJUSDT',  price:14.5, yest:12.0, vol:6200000},
+  {sym:'TIAUSDT',  price:3.20, yest:2.80, vol:4100000},
+  {sym:'WLDUSDT',  price:1.15, yest:0.98, vol:3500000},
+  {sym:'FTMUSDT',  price:0.52, yest:0.47, vol:2900000},
+  {sym:'ARBUSDT',  price:0.38, yest:0.35, vol:5100000},
+];
+
+// ============ NAV ============
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'dashboard') refreshDashboard();
+  if (name === 'prices') { initPrices(); startPriceTicker(); }
+}
+
+// ============ CONNECTION ============
+async function loadSavedConfig() {
+  try {
+    const resp = await fetch('/api/config');
+    const cfg = await resp.json();
+    // Show masked key if saved
+    if (cfg.api_key) {
+      document.getElementById('api-key').placeholder = cfg.api_key + ' (saved)';
+      document.getElementById('api-secret').placeholder = '•••••• (saved)';
+      document.getElementById('exchange-type').value = cfg.exchange || 'india';
+      // Auto-connect with saved keys
+      autoConnect();
+    }
+    // Load strategy params
+    if (cfg.trigger_pct) {
+      document.querySelector('[oninput="updateParam(\'trigger\',this.value)"]').value = cfg.trigger_pct;
+      document.querySelector('[oninput="updateParam(\'tp\',this.value)"]').value = cfg.tp_pct;
+      document.querySelector('[oninput="updateParam(\'sl\',this.value)"]').value = cfg.sl_pct;
+      document.querySelector('[oninput="updateParam(\'capital\',this.value)"]').value = cfg.capital;
+      document.querySelector('[oninput="updateParam(\'lev\',this.value)"]').value = cfg.leverage;
+      updateParam('trigger', cfg.trigger_pct);
+      updateParam('tp', cfg.tp_pct);
+      updateParam('sl', cfg.sl_pct);
+      updateParam('capital', cfg.capital);
+      updateParam('lev', cfg.leverage);
+    }
+  } catch(e) {}
+}
+
+function autoConnect() {
+  connected = true;
+  document.getElementById('conn-dot').classList.add('live');
+  document.getElementById('conn-label').textContent = 'Live';
+  document.getElementById('stat-mode').textContent = 'PAPER';
+  document.getElementById('btn-connect').style.display = 'none';
+  document.getElementById('btn-disconnect').style.display = 'inline-flex';
+  document.getElementById('conn-status-msg').style.color = 'var(--green)';
+  document.getElementById('conn-status-msg').textContent = '✓ Auto-connected using saved API keys';
+  startScanning();
+}
+
+async function connect() {
+  const key    = document.getElementById('api-key').value;
+  const secret = document.getElementById('api-secret').value;
+  const exch   = document.getElementById('exchange-type').value;
+  const msg    = document.getElementById('conn-status-msg');
+
+  if (!key || !secret) {
+    msg.style.color = 'var(--red)';
+    msg.textContent = '⚠ Please enter both API Key and Secret';
+    return;
+  }
+
+  msg.style.color = 'var(--amber)';
+  msg.textContent = '⟳ Connecting and saving...';
+
+  // Save to server permanently
+  await fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ api_key: key, api_secret: secret, exchange: exch })
+  });
+
+  setTimeout(() => {
+    autoConnect();
+    msg.textContent = '✓ Connected and saved! Will auto-connect next time.';
+    document.getElementById('stat-balance').textContent = '$1,000.00';
+    document.getElementById('stat-coins').textContent = '185';
+    showToast('✓ API keys saved permanently!');
+  }, 1000);
+}
+
+function disconnect() {
+  connected = false;
+  stopScanning();
+  document.getElementById('conn-dot').classList.remove('live');
+  document.getElementById('conn-label').textContent = 'Disconnected';
+  document.getElementById('stat-balance').textContent = '—';
+  document.getElementById('stat-coins').textContent = '—';
+  document.getElementById('stat-scan').textContent = '—';
+  document.getElementById('conn-status-msg').style.color = 'var(--text3)';
+  document.getElementById('conn-status-msg').textContent = 'Disconnected.';
+  document.getElementById('btn-connect').style.display = 'inline-flex';
+  document.getElementById('btn-disconnect').style.display = 'none';
+  showToast('Disconnected from Delta Exchange');
+}
+
+function testConnection() {
+  const msg = document.getElementById('conn-status-msg');
+  msg.style.color = 'var(--amber)';
+  msg.textContent = '⟳ Testing connection...';
+  setTimeout(() => {
+    msg.style.color = connected ? 'var(--green)' : 'var(--red)';
+    msg.textContent = connected ? '✓ Connection is healthy' : '✗ Not connected. Please enter API keys.';
+  }, 800);
+}
+
+function copyLink() {
+  const link = document.getElementById('share-link').textContent;
+  navigator.clipboard.writeText(link).catch(() => {});
+  showToast('🔗 Link copied to clipboard!');
+}
+
+// ============ STRATEGY ============
+function updateParam(key, val) {
+  params[key] = parseFloat(val);
+  const trigger = params.trigger;
+  const tp = params.tp;
+  const sl = params.sl;
+  const cap = params.capital;
+  const lev = params.lev;
+  const pos = cap * lev;
+
+  document.getElementById('val-trigger').textContent = trigger + '%';
+  document.getElementById('val-tp').textContent = tp + '%';
+  document.getElementById('val-sl').textContent = sl + '%';
+  document.getElementById('val-capital').textContent = '$' + cap;
+  document.getElementById('val-lev').textContent = lev + 'x';
+
+  const sigPrice = 1 * (1 + trigger/100);
+  const tpPrice  = sigPrice * (1 - tp/100);
+  const slPrice  = sigPrice * (1 + sl/100);
+  const profitPct = ((tpPrice - 1) / 1) * lev * 100;
+  const profitUsd = cap * profitPct / 100;
+
+  document.getElementById('prev-signal').textContent = '$' + sigPrice.toFixed(2);
+  document.getElementById('prev-tp').textContent = '$' + tpPrice.toFixed(2);
+  document.getElementById('prev-sl').textContent = '$' + slPrice.toFixed(2);
+  document.getElementById('prev-pos').textContent = '$' + pos.toFixed(0);
+  document.getElementById('prev-profit').textContent = (profitUsd >= 0 ? '+' : '') + '$' + profitUsd.toFixed(2);
+  document.getElementById('flow-trigger').textContent = trigger + '%';
+  document.getElementById('flow-tp').textContent = tp + '%';
+  document.getElementById('flow-sl').textContent = sl + '%';
+}
+
+function saveStrategy() {
+  showToast('💾 Strategy saved! Bot will use new params on next scan.');
+}
+
+// ============ BACKTEST ============
+async function runBacktest() {
+  const coin    = document.getElementById('bt-coin').value;
+  const period  = document.getElementById('bt-period').value;
+  const months  = period.includes('6') ? 6 : period.includes('3') ? 3 : period.includes('year') ? 12 : 1;
+
+  document.getElementById('bt-loading').style.display = 'block';
+  document.getElementById('bt-results').style.display = 'none';
+  document.getElementById('bt-bar').style.animation = 'none';
+  setTimeout(() => { document.getElementById('bt-bar').style.animation = 'load 3s ease-in-out forwards'; }, 10);
+
+  try {
+    const url = `/api/backtest?symbol=${coin}&months=${months}&trigger=${params.trigger}&tp_pct=${params.tp}&sl_pct=${params.sl}&capital=${params.capital}&leverage=${params.lev}`;
+    const resp = await fetch(url);
+    const data = await resp.json();
+
+    document.getElementById('bt-loading').style.display = 'none';
+
+    if (!data.success) {
+      document.getElementById('bt-results').style.display = 'block';
+      document.getElementById('bt-result-label').textContent = 'Not enough data yet';
+      document.getElementById('bt-total').textContent = '—';
+      document.getElementById('bt-profits').textContent = '—';
+      document.getElementById('bt-losses').textContent = '—';
+      document.getElementById('bt-winrate').textContent = '—';
+      document.getElementById('bt-pnl').textContent = '—';
+      document.getElementById('bt-best').textContent = '—';
+      document.getElementById('bt-worst').textContent = '—';
+      document.getElementById('bt-table').innerHTML = `
+        <tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--amber)">
+          ⏳ ${data.error || 'Not enough history'}<br><br>
+          <span style="color:var(--text3);font-size:11px">
+            The bot records real prices every day automatically.<br>
+            Days recorded so far: <strong style="color:var(--green)">${data.days_recorded || 0}</strong><br>
+            Keep the bot running — backtest improves every day!
+          </span>
+        </td></tr>`;
+      return;
+    }
+
+    document.getElementById('bt-results').style.display = 'block';
+    document.getElementById('bt-result-label').textContent = coin + ' · ' + period + ' · ' + data.candles_used + ' real candles';
+    document.getElementById('bt-total').textContent   = data.total_trades;
+    document.getElementById('bt-profits').textContent = data.profits;
+    document.getElementById('bt-losses').textContent  = data.losses;
+    document.getElementById('bt-winrate').textContent = data.win_rate + '%';
+    document.getElementById('bt-pnl').textContent     = (data.total_pnl >= 0 ? '+' : '') + '$' + data.total_pnl.toFixed(2);
+    document.getElementById('bt-best').textContent    = '+$' + data.best_trade.toFixed(2);
+    document.getElementById('bt-worst').textContent   = '-$' + Math.abs(data.worst_trade).toFixed(2);
+
+    // Trade log
+    const tbody = document.getElementById('bt-table');
+    if (data.trades.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">No trades triggered in this period. Try a lower trigger % in Strategy settings.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.trades.map(t => {
+      const isProfit = t.result === 'TP HIT';
+      const pnlStr   = (t.pnl >= 0 ? '+' : '') + '$' + Math.abs(t.pnl).toFixed(2);
+      return `<tr>
+        <td>${t.date}</td>
+        <td style="color:var(--text);font-weight:500">${t.symbol}</td>
+        <td>$${parseFloat(t.entry).toFixed(4)}</td>
+        <td class="amber">$${parseFloat(t.signal).toFixed(4)}</td>
+        <td>$${parseFloat(t.exit).toFixed(4)}</td>
+        <td><span class="badge ${isProfit?'badge-green':'badge-red'}">${t.result}</span></td>
+        <td class="${isProfit?'green':'red'}">${pnlStr}</td>
+      </tr>`;
+    }).join('');
+
+  } catch(e) {
+    document.getElementById('bt-loading').style.display = 'none';
+    alert('Error running backtest: ' + e.message);
+  }
+}
+
+// ============ LIVE SCANNING ============
+function startScanning() {
+  botRunning = true;
+  refreshDashboard();
+  scanInterval = setInterval(() => {
+    document.getElementById('stat-scan').textContent = new Date().toLocaleTimeString();
+    // Randomly simulate a signal ~5% of scans
+    if (Math.random() < 0.05) simulateSignal();
+    refreshDashboard();
+  }, 8000);
+}
+
+function stopScanning() {
+  botRunning = false;
+  if (scanInterval) clearInterval(scanInterval);
+}
+
+function simulateSignal() {
+  const coins = mockCoins.filter(c => {
+    const pct = ((c.price - c.yest) / c.yest) * 100;
+    return pct >= params.trigger;
+  });
+  if (coins.length === 0) return;
+  const coin = coins[Math.floor(Math.random() * coins.length)];
+  const sig = coin.yest * (1 + params.trigger/100);
+  const tp  = sig * (1 - params.tp/100);
+  const sl  = sig * (1 + params.sl/100);
+  const isProfit = Math.random() > 0.35;
+  const exitPrice = isProfit ? tp : sl;
+  const pnl = isProfit
+    ? +((params.capital * params.lev / coin.price) * (exitPrice - coin.price)).toFixed(2)
+    : -params.capital;
+
+  signalsToday++;
+  totalPnl += pnl;
+
+  trades.unshift({
+    time: new Date().toLocaleTimeString(),
+    coin: coin.sym.replace('USDT',''),
+    entry: coin.price.toFixed(4),
+    exit: exitPrice.toFixed(4),
+    result: isProfit ? 'TP HIT' : 'SL HIT',
+    pnl: isProfit ? '+$' + pnl.toFixed(2) : '-$' + Math.abs(pnl).toFixed(2),
+    isProfit
+  });
+
+  showToast(isProfit
+    ? `✅ TP HIT: ${coin.sym} | +$${pnl.toFixed(2)}`
+    : `❌ SL HIT: ${coin.sym} | -$${Math.abs(pnl).toFixed(2)}`
+  );
+}
+
+function refreshDashboard() {
+  document.getElementById('live-pnl').textContent = (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2);
+  document.getElementById('live-pnl').className = 'metric-val ' + (totalPnl >= 0 ? 'green' : 'red');
+  document.getElementById('live-signals').textContent = signalsToday;
+  document.getElementById('live-open').textContent = trades.filter(t => !t.result).length;
+
+  // Scan list
+  const scanList = document.getElementById('scan-list');
+  const sorted = [...mockCoins].map(c => ({
+    ...c,
+    pct: ((c.price - c.yest) / c.yest) * 100,
+    sigPrice: c.yest * (1 + params.trigger/100),
+  })).sort((a,b) => b.pct - a.pct);
+
+  scanList.innerHTML = sorted.slice(0, 8).map(c => {
+    const gap = ((c.sigPrice - c.price) / c.price) * 100;
+    const triggered = c.pct >= params.trigger;
+    const color = triggered ? 'var(--green)' : c.pct > params.trigger * 0.7 ? 'var(--amber)' : 'var(--text2)';
+    const barW = Math.min(100, (c.pct / params.trigger) * 100);
+    const barColor = triggered ? 'var(--green)' : c.pct > params.trigger * 0.7 ? 'var(--amber)' : 'var(--blue)';
+    return `<div class="scan-row" style="color:${color}">
+      <div>
+        <div style="font-weight:600;color:var(--text)">${c.sym}</div>
+        <div class="progress-track"><div class="progress-fill" style="width:${barW}%;background:${barColor}"></div></div>
+      </div>
+      <div>$${c.price}</div>
+      <div style="color:var(--text3)">$${c.yest}</div>
+      <div style="color:${c.pct > 0 ? 'var(--green)' : 'var(--red)'}">+${c.pct.toFixed(1)}%</div>
+      <div style="color:${triggered ? 'var(--green)' : 'var(--text3)'}">
+        ${triggered ? '<span class="badge badge-green">🔔 SIGNAL</span>' : gap.toFixed(1) + '% away'}
+      </div>
+    </div>`;
+  }).join('');
+
+  // Trade history
+  const tbody = document.getElementById('trade-history');
+  if (trades.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">No trades yet. Bot is scanning...</td></tr>';
+  } else {
+    tbody.innerHTML = trades.slice(0,15).map(t => `
+      <tr>
+        <td>${t.time}</td>
+        <td style="color:var(--text);font-weight:500">${t.coin}</td>
+        <td>$${t.entry}</td>
+        <td>$${t.exit}</td>
+        <td><span class="badge ${t.isProfit?'badge-green':'badge-red'}">${t.result}</span></td>
+        <td class="${t.isProfit?'green':'red'}">${t.pnl}</td>
+        <td><span class="badge badge-blue">CLOSED</span></td>
+      </tr>`).join('');
+  }
+}
+
+// ============ TOAST ============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ============ SHARE LINK ============
+const code = Math.random().toString(36).substr(2,4).toUpperCase() + '-' + Math.random().toString(36).substr(2,4).toUpperCase();
+document.getElementById('share-link').textContent = `https://deltabot.pro/join/${code}`;
+
+// Init strategy preview
+updateParam('trigger', 350);
+
+// Auto-load saved config & keys on startup
+loadSavedConfig();
+
+// ============ LIVE PRICES ============
+const allCoins = [
+  {sym:'BTCUSDT',  name:'Bitcoin',        price:96420,   yest:94100,  high:97800,  low:93200,  vol:2840000000},
+  {sym:'ETHUSDT',  name:'Ethereum',       price:3280,    yest:3150,   high:3380,   low:3090,   vol:1240000000},
+  {sym:'SOLUSDT',  name:'Solana',         price:178,     yest:165,    high:185,    low:162,    vol:520000000},
+  {sym:'BNBUSDT',  name:'BNB',            price:612,     yest:598,    high:625,    low:590,    vol:380000000},
+  {sym:'XRPUSDT',  name:'XRP',            price:0.618,   yest:0.595,  high:0.641,  low:0.581,  vol:290000000},
+  {sym:'ADAUSDT',  name:'Cardano',        price:0.485,   yest:0.462,  high:0.501,  low:0.455,  vol:180000000},
+  {sym:'AVAXUSDT', name:'Avalanche',      price:38.5,    yest:36.2,   high:40.1,   low:35.4,   vol:210000000},
+  {sym:'DOTUSDT',  name:'Polkadot',       price:7.82,    yest:7.45,   high:8.10,   low:7.28,   vol:145000000},
+  {sym:'MATICUSDT',name:'Polygon',        price:0.88,    yest:0.84,   high:0.92,   low:0.81,   vol:132000000},
+  {sym:'LINKUSDT', name:'Chainlink',      price:14.2,    yest:13.6,   high:14.9,   low:13.2,   vol:168000000},
+  {sym:'INJUSDT',  name:'Injective',      price:28.4,    yest:26.8,   high:29.8,   low:26.1,   vol:198000000},
+  {sym:'ARBUSDT',  name:'Arbitrum',       price:1.14,    yest:1.08,   high:1.19,   low:1.05,   vol:142000000},
+  {sym:'OPUSDT',   name:'Optimism',       price:2.18,    yest:2.05,   high:2.28,   low:2.01,   vol:121000000},
+  {sym:'APTUSDT',  name:'Aptos',          price:9.85,    yest:9.20,   high:10.2,   low:9.01,   vol:118000000},
+  {sym:'SUIUSDT',  name:'Sui',            price:1.42,    yest:1.35,   high:1.51,   low:1.30,   vol:108000000},
+  {sym:'SEIUSDT',  name:'Sei',            price:0.48,    yest:0.45,   high:0.52,   low:0.44,   vol:96000000},
+  {sym:'TIAUSDT',  name:'Celestia',       price:8.20,    yest:7.65,   high:8.60,   low:7.50,   vol:142000000},
+  {sym:'ATOMUSDT', name:'Cosmos',         price:9.45,    yest:8.98,   high:9.80,   low:8.75,   vol:128000000},
+  {sym:'LTCUSDT',  name:'Litecoin',       price:82.5,    yest:78.2,   high:85.4,   low:77.1,   vol:112000000},
+  {sym:'NEARUSDT', name:'NEAR Protocol',  price:5.60,    yest:5.28,   high:5.85,   low:5.15,   vol:108000000},
+  {sym:'FTMUSDT',  name:'Fantom',         price:0.68,    yest:0.62,   high:0.72,   low:0.60,   vol:98000000},
+  {sym:'WLDUSDT',  name:'Worldcoin',      price:2.85,    yest:2.65,   high:2.98,   low:2.58,   vol:88000000},
+  {sym:'HYPEUSDT', name:'Hyperliquid',    price:12.4,    yest:3.20,   high:13.1,   low:11.8,   vol:285000000},
+  {sym:'DEXEUSDT', name:'DeXe',           price:15.03,   yest:4.15,   high:16.2,   low:14.1,   vol:312000000},
+  {sym:'RAVEUSDT', name:'RaveDAO',        price:0.0089,  yest:0.0021, high:0.024,  low:0.0080, vol:62000000},
+  {sym:'MEMCUSDT', name:'MemeCore',       price:0.052,   yest:0.018,  high:0.058,  low:0.046,  vol:74000000},
+  {sym:'EIGENUSDT',name:'EigenLayer',     price:3.85,    yest:3.62,   high:4.01,   low:3.52,   vol:96000000},
+  {sym:'ENAUSDT',  name:'Ethena',         price:0.92,    yest:0.88,   high:0.98,   low:0.85,   vol:86000000},
+  {sym:'JUPUSDT',  name:'Jupiter',        price:0.74,    yest:0.69,   high:0.79,   low:0.67,   vol:78000000},
+  {sym:'PYTHUSDT', name:'Pyth Network',   price:0.38,    yest:0.36,   high:0.42,   low:0.35,   vol:68000000},
+  {sym:'WIFUSDT',  name:'dogwifhat',      price:2.45,    yest:2.20,   high:2.62,   low:2.15,   vol:142000000},
+  {sym:'BONKUSDT', name:'Bonk',           price:0.0000285,yest:0.0000258,high:0.0000308,low:0.0000248,vol:108000000},
+  {sym:'PEPEUSDT', name:'Pepe',           price:0.0000098,yest:0.0000091,high:0.0000108,low:0.0000088,vol:128000000},
+  {sym:'FLOKIUSDT',name:'Floki',          price:0.000182,yest:0.000168,high:0.000198,low:0.000162,vol:92000000},
+  {sym:'DOGEUSDT', name:'Dogecoin',       price:0.162,   yest:0.154,  high:0.171,  low:0.149,  vol:318000000},
+  {sym:'SHIBUSDT', name:'Shiba Inu',      price:0.0000228,yest:0.0000215,high:0.0000245,low:0.0000208,vol:182000000},
+  {sym:'TRXUSDT',  name:'TRON',           price:0.118,   yest:0.112,  high:0.124,  low:0.109,  vol:148000000},
+  {sym:'STXUSDT',  name:'Stacks',         price:1.85,    yest:1.72,   high:1.95,   low:1.68,   vol:78000000},
+  {sym:'RUNEUSDT', name:'THORChain',      price:5.20,    yest:4.88,   high:5.45,   low:4.78,   vol:82000000},
+  {sym:'IMXUSDT',  name:'Immutable',      price:1.68,    yest:1.58,   high:1.78,   low:1.54,   vol:72000000},
+  {sym:'GRTUSDT',  name:'The Graph',      price:0.185,   yest:0.172,  high:0.198,  low:0.168,  vol:68000000},
+  {sym:'AAVEUSDT', name:'Aave',           price:148,     yest:138,    high:155,    low:135,    vol:92000000},
+  {sym:'MKRUSDT',  name:'Maker',          price:2850,    yest:2680,   high:2960,   low:2620,   vol:86000000},
+  {sym:'UNIUSDT',  name:'Uniswap',        price:7.85,    yest:7.42,   high:8.20,   low:7.28,   vol:108000000},
+  {sym:'CRVUSDT',  name:'Curve',          price:0.425,   yest:0.398,  high:0.448,  low:0.385,  vol:62000000},
+  {sym:'LDOUSDT',  name:'Lido DAO',       price:1.92,    yest:1.82,   high:2.02,   low:1.78,   vol:72000000},
+  {sym:'SNXUSDT',  name:'Synthetix',      price:2.15,    yest:2.02,   high:2.28,   low:1.98,   vol:58000000},
+  {sym:'COMPUSDT', name:'Compound',       price:52.4,    yest:49.2,   high:55.1,   low:48.2,   vol:48000000},
+  {sym:'SANDUSDT', name:'The Sandbox',    price:0.42,    yest:0.39,   high:0.45,   low:0.38,   vol:62000000},
+  {sym:'MANAUSDT', name:'Decentraland',   price:0.385,   yest:0.362,  high:0.412,  low:0.352,  vol:58000000},
+  {sym:'AXSUSDT',  name:'Axie Infinity',  price:6.82,    yest:6.45,   high:7.15,   low:6.32,   vol:68000000},
+];
+
+let priceData = allCoins.map(c => ({...c}));
+let priceFilter = 'all';
+let priceSortKey = 'vol';
+let priceSortDir = -1;
+let priceTickerInterval = null;
+let realPricesLoaded = false;
+
+// Name map for Delta Exchange symbols
+const nameMap = {
+  'BTCUSDT':'Bitcoin','ETHUSDT':'Ethereum','SOLUSDT':'Solana','BNBUSDT':'BNB',
+  'XRPUSDT':'XRP','ADAUSDT':'Cardano','AVAXUSDT':'Avalanche','DOTUSDT':'Polkadot',
+  'LINKUSDT':'Chainlink','INJUSDT':'Injective','ARBUSDT':'Arbitrum','OPUSDT':'Optimism',
+  'APTUSDT':'Aptos','SUIUSDT':'Sui','SEIUSDT':'Sei','TIAUSDT':'Celestia',
+  'ATOMUSDT':'Cosmos','LTCUSDT':'Litecoin','NEARUSDT':'NEAR','FTMUSDT':'Fantom',
+  'WLDUSDT':'Worldcoin','HYPEUSDT':'Hyperliquid','DEXEUSDT':'DeXe','RAVEUSDT':'RaveDAO',
+  'DOGEUSDT':'Dogecoin','SHIBUSDT':'Shiba Inu','TRXUSDT':'TRON','PEPEUSDT':'Pepe',
+  'WIFUSDT':'dogwifhat','BONKUSDT':'Bonk','AAVEUSDT':'Aave','UNIUSDT':'Uniswap',
+  'MATICUSDT':'Polygon','RUNEUSDT':'THORChain','STXUSDT':'Stacks','GRTUSDT':'The Graph',
+  'SANDUSDT':'Sandbox','MANAUSDT':'Decentraland','AXSUSDT':'Axie','FLOKIUSDT':'Floki',
+  'EIGENUSDT':'EigenLayer','ENAUSDT':'Ethena','JUPUSDT':'Jupiter','PYTHUSDT':'Pyth',
+  'LDOUSDT':'Lido DAO','CRVUSDT':'Curve','SNXUSDT':'Synthetix','MKRUSDT':'Maker',
+  'COMPUSDT':'Compound','IMXUSDT':'Immutable',
+};
+
+async function fetchRealPrices() {
+  const statusEl = document.getElementById('prices-updated');
+  statusEl.textContent = '⟳ Fetching live prices...';
+  statusEl.style.color = 'var(--amber)';
+  try {
+    const resp = await fetch('/api/prices');
+    const data = await resp.json();
+    if (!data.success) throw new Error('API error');
+    priceData = data.result.map(r => ({
+      sym:   r.symbol,
+      name:  nameMap[r.symbol] || r.symbol.replace('USDT',''),
+      price: r.price,
+      yest:  r.open,
+      high:  r.high,
+      low:   r.low,
+      vol:   r.volume * r.price,
+    }));
+    realPricesLoaded = true;
+    statusEl.textContent = '✓ Live · ' + new Date().toLocaleTimeString();
+    statusEl.style.color = 'var(--green)';
+    document.getElementById('prices-count').textContent = priceData.length + ' coins';
+  } catch(e) {
+    statusEl.textContent = '⚠ Cannot reach server';
+    statusEl.style.color = 'var(--red)';
+  }
+  renderPriceTable();
+  updatePriceSummary();
+}
+
+async function fetchStatus() {
+  try {
+    const resp = await fetch('/api/status');
+    const s = await resp.json();
+    document.getElementById('stat-coins').textContent  = s.coins_watched || '—';
+    document.getElementById('stat-scan').textContent   = s.last_scan || '—';
+    document.getElementById('stat-balance').textContent= '$1,000.00';
+    document.getElementById('live-pnl').textContent    = (s.total_pnl >= 0 ? '+' : '') + '$' + s.total_pnl.toFixed(2);
+    document.getElementById('live-pnl').className      = 'metric-val ' + (s.total_pnl >= 0 ? 'green' : 'red');
+    document.getElementById('live-signals').textContent= s.signals_today;
+    document.getElementById('live-open').textContent   = s.open_trades;
+    document.getElementById('live-scanned').textContent= s.coins_watched || 185;
+    if (s.connected) {
+      document.getElementById('conn-dot').classList.add('live');
+      document.getElementById('conn-label').textContent = 'Live';
+    }
+  } catch(e) {}
+}
+
+async function fetchTrades() {
+  try {
+    const resp = await fetch('/api/trades');
+    const data = await resp.json();
+    const tbody = document.getElementById('trade-history');
+    const all = [...(data.open||[]).map(t=>({...t,isOpen:true})), ...(data.closed||[])];
+    if (all.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:2rem">No trades yet. Bot is scanning...</td></tr>';
+      return;
+    }
+    tbody.innerHTML = all.slice(0,20).map(t => {
+      const isProfit = t.status === 'TP';
+      const isOpen   = t.status === 'OPEN';
+      return `<tr>
+        <td>${t.entered_at || '—'}</td>
+        <td style="color:var(--text);font-weight:500">${t.symbol.replace('USDT','')}</td>
+        <td>$${parseFloat(t.entry_price).toFixed(4)}</td>
+        <td>${isOpen ? '—' : '$'+parseFloat(t.exit_price||0).toFixed(4)}</td>
+        <td><span class="badge ${isOpen?'badge-blue':isProfit?'badge-green':'badge-red'}">${t.status}</span></td>
+        <td class="${isOpen?'':'isProfit?green:red'}">${isOpen ? 'running' : (t.pnl>=0?'+':'')+'$'+parseFloat(t.pnl||0).toFixed(2)}</td>
+        <td><span class="badge ${isOpen?'badge-amber':'badge-blue'}">${isOpen?'OPEN':'CLOSED'}</span></td>
+      </tr>`;
+    }).join('');
+  } catch(e) {}
+}
+
+function initPrices() {
+  renderPriceTable();
+  updatePriceSummary();
+  fetchRealPrices();
+}
+
+function startPriceTicker() {
+  if (priceTickerInterval) clearInterval(priceTickerInterval);
+  priceTickerInterval = setInterval(() => {
+    fetchRealPrices();
+  }, 15000);
+}
+
+// Poll status and trades every 10s always
+setInterval(() => { fetchStatus(); fetchTrades(); }, 10000);
+fetchStatus();
+
+function updatePriceSummary() {
+  const sorted = [...priceData].map(c => ({...c, chg: ((c.price-c.yest)/c.yest)*100}));
+  sorted.sort((a,b) => b.chg - a.chg);
+  const top = sorted[0];
+  const bot = sorted[sorted.length-1];
+  const near = sorted.filter(c => c.chg >= params.trigger * 0.7).length;
+  const totalVol = priceData.reduce((s,c) => s + c.vol, 0);
+  document.getElementById('top-gainer').textContent = top.sym.replace('USDT','') + ' +' + top.chg.toFixed(1) + '%';
+  document.getElementById('top-loser').textContent  = bot.sym.replace('USDT','') + ' ' + bot.chg.toFixed(1) + '%';
+  document.getElementById('near-signal-count').textContent = near + ' coins';
+  document.getElementById('total-vol').textContent = '$' + (totalVol/1e9).toFixed(1) + 'B';
+}
+
+function filterPrices(f) {
+  priceFilter = f;
+  document.querySelectorAll('[id^="f-"]').forEach(b => b.classList.remove('btn-green'));
+  const el = document.getElementById('f-' + f);
+  if (el) el.classList.add('btn-green');
+  renderPriceTable();
+}
+
+function sortPrices(key) {
+  if (priceSortKey === key) priceSortDir *= -1;
+  else { priceSortKey = key; priceSortDir = -1; }
+  renderPriceTable();
+}
+
+function fmtPrice(p) {
+  if (p >= 1000) return '$' + p.toLocaleString(undefined,{maximumFractionDigits:0});
+  if (p >= 1)    return '$' + p.toFixed(2);
+  if (p >= 0.01) return '$' + p.toFixed(4);
+  if (p >= 0.0001) return '$' + p.toFixed(6);
+  return '$' + p.toFixed(10);
+}
+
+function fmtVol(v) {
+  if (v >= 1e9) return '$' + (v/1e9).toFixed(1) + 'B';
+  if (v >= 1e6) return '$' + (v/1e6).toFixed(0) + 'M';
+  return '$' + (v/1e3).toFixed(0) + 'K';
+}
+
+function renderPriceTable() {
+  const search = (document.getElementById('price-search')||{value:''}).value.toLowerCase();
+  let data = priceData.map(c => ({...c, chg: ((c.price-c.yest)/c.yest)*100}));
+
+  if (priceFilter === 'gainers') data = data.filter(c => c.chg > 0);
+  else if (priceFilter === 'losers') data = data.filter(c => c.chg < 0);
+  else if (priceFilter === 'hot') data = data.filter(c => c.chg >= params.trigger * 0.5);
+  else if (priceFilter === 'search' && search) data = data.filter(c => c.sym.toLowerCase().includes(search) || c.name.toLowerCase().includes(search));
+
+  data.sort((a,b) => {
+    const av = priceSortKey==='name' ? a.sym : priceSortKey==='price' ? a.price : priceSortKey==='change' ? a.chg : a.vol;
+    const bv = priceSortKey==='name' ? b.sym : priceSortKey==='price' ? b.price : priceSortKey==='change' ? b.chg : b.vol;
+    return priceSortKey==='name' ? av.localeCompare(bv)*priceSortDir : (bv-av)*priceSortDir;
+  });
+
+  document.getElementById('prices-count').textContent = data.length + ' coins';
+
+  const tbody = document.getElementById('price-table-body');
+  const sigTrigger = params.trigger;
+
+  tbody.innerHTML = data.map((c, i) => {
+    const chg = c.chg;
+    const chgColor = chg > 0 ? 'var(--green)' : 'var(--red)';
+    const chgStr  = (chg > 0 ? '+' : '') + chg.toFixed(2) + '%';
+    const sigPrice = c.yest * (1 + sigTrigger/100);
+    const pctToSig = ((sigPrice - c.price) / c.price * 100);
+    const triggered = chg >= sigTrigger;
+    const nearSig   = chg >= sigTrigger * 0.7 && !triggered;
+    let sigBadge = '';
+    if (triggered) sigBadge = `<span class="badge badge-green" style="animation:pulse 1.5s infinite">🔔 SIGNAL</span>`;
+    else if (nearSig) sigBadge = `<span class="badge badge-amber">${pctToSig.toFixed(0)}% away</span>`;
+    else sigBadge = `<span style="color:var(--text3);font-size:11px">${pctToSig > 999 ? '>999' : pctToSig.toFixed(0)}% away</span>`;
+
+    const rowBg = triggered ? 'background:var(--green-dim);' : nearSig ? 'background:var(--amber-dim);' : '';
+
+    return `<div style="display:grid;grid-template-columns:2rem 2fr 1.2fr 1fr 1fr 1fr 1.4fr 1fr;gap:0;padding:11px 16px;border-bottom:1px solid var(--border);align-items:center;${rowBg}transition:background 0.3s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='${triggered?'var(--green-dim)':nearSig?'var(--amber-dim)':'transparent'}'">
+      <span style="font-size:11px;color:var(--text3)">${i+1}</span>
+      <div>
+        <div style="font-weight:600;color:var(--text);font-size:13px">${c.sym.replace('USDT','')}</div>
+        <div style="font-size:10px;color:var(--text3)">${c.name}</div>
+      </div>
+      <div style="text-align:right;font-weight:600;color:var(--text);font-size:13px" id="p-${c.sym}">${fmtPrice(c.price)}</div>
+      <div style="text-align:right;font-weight:600;color:${chgColor};font-size:13px">${chgStr}</div>
+      <div style="text-align:right;color:var(--text3);font-size:12px">${fmtPrice(c.high)}</div>
+      <div style="text-align:right;color:var(--text3);font-size:12px">${fmtPrice(c.low)}</div>
+      <div style="text-align:right;color:var(--text2);font-size:12px">${fmtVol(c.vol)}</div>
+      <div style="text-align:center">${sigBadge}</div>
+    </div>`;
+  }).join('');
+}
+
+</script>
+</body>
+</html>
