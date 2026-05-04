@@ -9,7 +9,7 @@ from flask_cors import CORS
 import requests, threading, time, json, os
 from datetime import datetime
 
-app = Flask(__name__, static_folder='static')
+app = Flask(__name__, static_folder='.', static_url_path='')
 CORS(app)
 
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
@@ -183,7 +183,7 @@ def scan_loop():
 
 @app.route("/")
 def index():
-    return send_from_directory("static", "index.html")
+    return send_from_directory('.', 'index.html')
 
 @app.route("/api/prices")
 def api_prices():
