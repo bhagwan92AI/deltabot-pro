@@ -431,14 +431,13 @@ def api_backtest():
     })
 
 if __name__ == "__main__":
-    # Start scanner immediately - no API keys needed for price fetching
     t = threading.Thread(target=scan_loop, daemon=True)
     t.start()
     port = int(os.environ.get("PORT", 5000))
     print(f"[SERVER] Running at http://localhost:{port}")
     app.run(host="0.0.0.0", port=port)
-
-# Also start when running via gunicorn on Railway
-scanner_thread = threading.Thread(target=scan_loop, daemon=True)
-scanner_thread.start()
-print("[SERVER] Scanner started via gunicorn")
+else:
+    # Running via gunicorn on Railway - start scanner
+    t = threading.Thread(target=scan_loop, daemon=True)
+    t.start()
+    print("[SERVER] Scanner started via gunicorn")
