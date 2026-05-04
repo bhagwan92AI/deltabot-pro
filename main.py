@@ -98,13 +98,22 @@ def fetch_prices():
                     sym = t.get("symbol","")
                     if not sym or not sym.endswith("USDT"):
                         continue
+                    # Skip stock tokens (they end in X like GOOGLX, TSLAX)
+                    base = sym.replace("USDT","")
+                    if base.endswith("X") and len(base) > 4:
+                        continue
+                    # Skip if contract type is not perpetual
+                    contract_type = t.get("contract_type","")
+                    if contract_type and contract_type not in ["perpetual_futures","perpetual"]:
+                        continue
                     price = float(t.get("close") or t.get("mark_price") or t.get("last_price") or 0)
                     if price <= 0:
                         continue
+                    open_price = float(t.get("open") or price)
                     tickers[sym] = {
                         "symbol":    sym,
                         "price":     price,
-                        "open":      float(t.get("open") or price),
+                        "open":      open_price,
                         "high":      float(t.get("high") or price),
                         "low":       float(t.get("low")  or price),
                         "volume":    float(t.get("volume") or t.get("turnover_usd") or 0),
@@ -211,7 +220,15 @@ def scan_loop():
 def index():
     return send_from_directory('.', 'index.html')
 
-@app.route("/api/prices")
+@app.route("/api/debug")
+def api_debug():
+    syms = list(state["tickers"].keys())
+    return jsonify({
+        "total": len(syms),
+        "symbols": sorted(syms),
+        "last_scan": state["last_scan"],
+        "sample": {s: state["tickers"][s]["price"] for s in syms[:5]} if syms else {}
+    })
 def api_prices():
     out = []
     for sym, t in state["tickers"].items():
@@ -438,6 +455,7 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port)
 else:
     # Running via gunicorn on Railway - start scanner
+    
     t = threading.Thread(target=scan_loop, daemon=True)
     t.start()
     print("[SERVER] Scanner started via gunicorn")
