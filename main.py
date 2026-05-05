@@ -67,64 +67,120 @@ def get_delta_urls():
     return urls
 
 def fetch_prices():
-    """Fetch all perpetual futures prices from Delta Exchange."""
+    """Fetch prices using Delta Exchange WebSocket for complete coin list."""
+    import threading as th
+    result = {}
+    done = th.Event()
+
+    try:
+        import websocket as ws_lib
+        tickers_received = {}
+
+        def on_message(ws, message):
+            try:
+                data = json.loads(message)
+                if data.get("type") == "subscriptions":
+                    return
+                # Handle ticker update
+                if data.get("type") in ["ticker", "v2/ticker"]:
+                    payload = data.get("data", data)
+                    sym = payload.get("symbol","")
+                    if not sym or not sym.endswith("USDT"):
+                        return
+                    price = float(payload.get("close") or payload.get("mark_price") or 0)
+                    if price <= 0:
+                        return
+                    tickers_received[sym] = {
+                        "symbol":    sym,
+                        "price":     price,
+                        "open":      float(payload.get("open") or price),
+                        "high":      float(payload.get("high") or price),
+                        "low":       float(payload.get("low")  or price),
+                        "volume":    float(payload.get("volume") or 0),
+                        "mark_price":float(payload.get("mark_price") or price),
+                    }
+                    if len(tickers_received) >= 50:
+                        result.update(tickers_received)
+                        done.set()
+                        ws.close()
+            except Exception as e:
+                print(f"[WS] message error: {e}")
+
+        def on_open(ws):
+            sub = {"type": "subscribe", "payload": {"channels": [{"name": "v2/ticker", "symbols": ["all"]}]}}
+            ws.send(json.dumps(sub))
+
+        def on_error(ws, error):
+            print(f"[WS] error: {error}")
+            done.set()
+
+        def on_close(ws, *args):
+            done.set()
+
+        wst = ws_lib.WebSocketApp(
+            "wss://socket.india.delta.exchange",
+            on_message=on_message,
+            on_open=on_open,
+            on_error=on_error,
+            on_close=on_close,
+        )
+        t = th.Thread(target=wst.run_forever, daemon=True)
+        t.start()
+        done.wait(timeout=20)
+        if result:
+            print(f"[FETCH] ✓ WebSocket: {len(result)} symbols")
+            return result
+    except Exception as e:
+        print(f"[FETCH] WebSocket failed: {e}")
+
+    # Fallback to REST API
     urls = [
         "https://api.india.delta.exchange/v2/tickers",
         "https://api.delta.exchange/v2/tickers",
-        "https://api.india.delta.exchange/v2/tickers?contract_types=perpetual_futures",
-        "https://api.delta.exchange/v2/tickers?contract_types=perpetual_futures",
     ]
-    browser_headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json',
         'Origin': 'https://www.delta.exchange',
         'Referer': 'https://www.delta.exchange/',
-        'Connection': 'keep-alive',
     }
     for url in urls:
-        for hdrs in [browser_headers, {"Accept":"application/json","User-Agent":"python-requests/2.31.0"}]:
-            try:
-                r = requests.get(url, timeout=15, headers=hdrs)
-                print(f"[FETCH] {url[:55]} -> {r.status_code}")
-                if r.status_code != 200:
+        try:
+            r = requests.get(url, timeout=15, headers=headers)
+            if r.status_code != 200:
+                continue
+            data = r.json()
+            if not data.get("success"):
+                continue
+            tickers = {}
+            for t in data.get("result", []):
+                sym = t.get("symbol","")
+                if not sym or not sym.endswith("USDT"):
                     continue
-                data = r.json()
-                if not data.get("success"):
+                base = sym.replace("USDT","")
+                if base.endswith("X") and len(base) > 4:
                     continue
-                results = data.get("result", [])
-                tickers = {}
-                for t in results:
-                    sym = t.get("symbol","")
-                    if not sym or not sym.endswith("USDT"):
-                        continue
-                    # Skip stock tokens (they end in X like GOOGLX, TSLAX)
-                    base = sym.replace("USDT","")
-                    if base.endswith("X") and len(base) > 4:
-                        continue
-                    # Skip if contract type is not perpetual
-                    contract_type = t.get("contract_type","")
-                    if contract_type and contract_type not in ["perpetual_futures","perpetual"]:
-                        continue
-                    price = float(t.get("close") or t.get("mark_price") or t.get("last_price") or 0)
-                    if price <= 0:
-                        continue
-                    open_price = float(t.get("open") or price)
-                    tickers[sym] = {
-                        "symbol":    sym,
-                        "price":     price,
-                        "open":      open_price,
-                        "high":      float(t.get("high") or price),
-                        "low":       float(t.get("low")  or price),
-                        "volume":    float(t.get("volume") or t.get("turnover_usd") or 0),
-                        "mark_price":float(t.get("mark_price") or price),
-                    }
-                if tickers:
-                    print(f"[FETCH] ✓ {len(tickers)} symbols loaded")
-                    return tickers
-            except Exception as e:
-                print(f"[FETCH] {url[:40]}: {e}")
-    print("[FETCH] ✗ All Delta URLs failed")
+                contract_type = t.get("contract_type","")
+                if contract_type and contract_type not in ["perpetual_futures","perpetual",""]:
+                    continue
+                price = float(t.get("close") or t.get("mark_price") or 0)
+                if price <= 0:
+                    continue
+                open_price = float(t.get("open") or price)
+                tickers[sym] = {
+                    "symbol":    sym,
+                    "price":     price,
+                    "open":      open_price,
+                    "high":      float(t.get("high") or price),
+                    "low":       float(t.get("low")  or price),
+                    "volume":    float(t.get("volume") or 0),
+                    "mark_price":float(t.get("mark_price") or price),
+                }
+            if tickers:
+                print(f"[FETCH] ✓ REST: {len(tickers)} symbols")
+                return tickers
+        except Exception as e:
+            print(f"[FETCH] {url[:40]}: {e}")
     return {}
 
 def scan_loop():
@@ -229,6 +285,7 @@ def api_debug():
         "last_scan": state["last_scan"],
         "sample": {s: state["tickers"][s]["price"] for s in syms[:5]} if syms else {}
     })
+@app.route("/api/prices")
 def api_prices():
     out = []
     for sym, t in state["tickers"].items():
@@ -455,7 +512,6 @@ if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port)
 else:
     # Running via gunicorn on Railway - start scanner
-    
     t = threading.Thread(target=scan_loop, daemon=True)
     t.start()
     print("[SERVER] Scanner started via gunicorn")
