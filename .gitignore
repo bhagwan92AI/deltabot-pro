@@ -1,0 +1,6 @@
+.env
+config.json
+*.log
+venv/
+__pycache__/
+node_modules/
